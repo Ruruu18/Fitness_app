@@ -8,14 +8,19 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/server.js"
+    },
+    {
       "src": "/(.*)",
       "dest": "/server.js"
     }
   ],
   "env": {
-    "DB_HOST": "replace-with-your-db-host",
-    "DB_USER": "replace-with-your-db-user",
-    "DB_PASSWORD": "replace-with-your-db-password",
+    "NODE_ENV": "production",
+    "DB_HOST": "",
+    "DB_USER": "",
+    "DB_PASSWORD": "",
     "DB_NAME": "fitness_app",
     "DB_PORT": "3306"
   }

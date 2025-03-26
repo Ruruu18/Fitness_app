@@ -80,7 +80,13 @@ const inMemoryDB = {
 // Database utility function (with fallback to in-memory)
 const getDbConnection = async () => {
   try {
-    // Try to connect to MySQL
+    // Check if we're in a serverless environment with no MySQL
+    if (process.env.VERCEL && (!process.env.DB_HOST || !process.env.DB_USER)) {
+      console.log('Serverless environment detected with no DB credentials, using in-memory database');
+      return { type: 'memory', connection: inMemoryDB };
+    }
+
+    // Try to connect to MySQL with a shorter timeout for serverless
     const pool = mysql.createPool({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
@@ -88,12 +94,22 @@ const getDbConnection = async () => {
       database: process.env.DB_NAME,
       port: process.env.DB_PORT || 3306,
       waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
+      connectionLimit: 5,
+      queueLimit: 0,
+      connectTimeout: 10000 // 10 second timeout
     });
     
-    // Test the connection
-    await pool.query('SELECT 1');
+    // Test the connection with a timeout
+    const connectionPromise = pool.query('SELECT 1');
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database connection timeout')), 5000);
+    });
+    
+    // Race the connection against the timeout
+    await Promise.race([connectionPromise, timeoutPromise]);
+    
     return { type: 'mysql', connection: pool };
   } catch (error) {
     console.warn('MySQL connection failed, using in-memory database:', error.message);
@@ -122,6 +138,7 @@ app.get('/', async (req, res) => {
       time: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Root route error:', error);
     res.status(500).json({ 
       message: 'Server error', 
       error: error.message,
@@ -146,14 +163,14 @@ app.post('/api/login', async (req, res) => {
     if (db.type === 'mysql') {
       // Query for user in MySQL
       const [rows] = await db.connection.query(
-        'SELECT * FROM users WHERE email = ? AND password = ?',
-        [email, password] // Note: In production, use password hashing
+      'SELECT * FROM users WHERE email = ? AND password = ?',
+      [email, password] // Note: In production, use password hashing
       );
-      
+    
       if (rows.length === 0) {
         return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
-      
+    
       user = rows[0];
     } else {
       // Query for user in memory
@@ -171,7 +188,7 @@ app.post('/api/login', async (req, res) => {
     res.json({ success: true, user: userWithoutPassword });
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -195,17 +212,17 @@ app.post('/api/register', async (req, res) => {
     if (db.type === 'mysql') {
       // Check if user already exists in MySQL
       const [existingUsers] = await db.connection.query('SELECT * FROM users WHERE email = ?', [email]);
-      
+    
       if (existingUsers.length > 0) {
         return res.status(409).json({ success: false, message: 'User already exists' });
       }
-      
+    
       // Insert new user
       const [result] = await db.connection.query(
-        'INSERT INTO users (email, password) VALUES (?, ?)',
-        [email, password] // Note: In production, use password hashing
+      'INSERT INTO users (email, password) VALUES (?, ?)',
+      [email, password] // Note: In production, use password hashing
       );
-      
+    
       userId = result.insertId;
     } else {
       // Check if user already exists in memory
@@ -228,7 +245,7 @@ app.post('/api/register', async (req, res) => {
     res.status(201).json({ success: true, message: 'User registered successfully', userId });
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -247,10 +264,10 @@ app.post('/api/workouts', async (req, res) => {
     
     if (db.type === 'mysql') {
       const [result] = await db.connection.query(
-        'INSERT INTO workouts (user_id, title, description, workout_date, duration, calories) VALUES (?, ?, ?, ?, ?, ?)',
-        [userId, title, description, date, duration, calories]
-      );
-      
+      'INSERT INTO workouts (user_id, title, description, workout_date, duration, calories) VALUES (?, ?, ?, ?, ?, ?)',
+      [userId, title, description, date, duration, calories]
+    );
+    
       workoutId = result.insertId;
     } else {
       workoutId = db.connection.workouts.length + 1;
@@ -308,9 +325,9 @@ app.put('/api/workouts/:id', async (req, res) => {
     
     if (db.type === 'mysql') {
       await db.connection.query(
-        'UPDATE workouts SET title = ?, description = ?, workout_date = ?, duration = ?, calories = ? WHERE id = ?',
-        [title, description, date, duration, calories, workoutId]
-      );
+      'UPDATE workouts SET title = ?, description = ?, workout_date = ?, duration = ?, calories = ? WHERE id = ?',
+      [title, description, date, duration, calories, workoutId]
+    );
     } else {
       const index = db.connection.workouts.findIndex(w => w.id == workoutId);
       if (index !== -1) {
@@ -358,29 +375,41 @@ app.delete('/api/workouts/:id', async (req, res) => {
   }
 });
 
-// Add debug endpoint for connection testing
-app.get('/api/status', (req, res) => {
-  res.json({
-    success: true,
-    message: 'API is running correctly',
-    serverTime: new Date().toISOString(),
-    remoteAddress: req.ip,
-    serverInfo: getServerInfo(),
-    usingVercel: !!process.env.VERCEL
+// Debug route
+app.get('/api/status', async (req, res) => {
+  try {
+    res.json({
+      status: 'API is running',
+      server: getServerInfo(),
+      memory: {
+        total: Math.round(os.totalmem() / 1024 / 1024) + 'MB',
+        free: Math.round(os.freemem() / 1024 / 1024) + 'MB',
+        usage: Math.round((os.totalmem() - os.freemem()) / os.totalmem() * 100) + '%'
+      },
+      time: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Status error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ 
+    success: false, 
+    message: 'Internal server error', 
+    error: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message 
   });
 });
 
-// For local development
+// For local server
 if (!process.env.VERCEL) {
-  app.listen(PORT, '0.0.0.0', () => {
-    const serverInfo = getServerInfo();
+  app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
-    console.log(`Local access: http://localhost:${PORT}`);
-    console.log(`Network access: http://${serverInfo.ip}:${PORT}`);
-    console.log(`For Android emulator: http://10.0.2.2:${PORT}`);
   });
 }
 
-// Export for Vercel serverless function
+// For Vercel serverless
 module.exports = app; 
-}); 
