@@ -4,25 +4,55 @@
     "slug": "Fitness_App",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+    "icon": "./assets/bull.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
+    "experiments": {
+      "tsconfigPaths": true
     },
+    "jsEngine": "hermes",
+    "splash": {
+      "image": "./assets/bull.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1E1E1E"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yourcompany.fitnessapp"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      }
+        "foregroundImage": "./assets/bull.png",
+        "backgroundColor": "#1E1E1E"
+      },
+      "package": "com.yourcompany.fitnessapp",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "VIBRATE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-system-ui"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e733d8e9-ee9e-4b9d-a305-933974d4f6b7"
+      }
+    },
+    "owner": "ruru18",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e733d8e9-ee9e-4b9d-a305-933974d4f6b7"
     }
   }
 }

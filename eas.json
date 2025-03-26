@@ -1,0 +1,49 @@
+{
+  "cli": {
+    "version": ">= 5.9.1",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildConfiguration": "Debug"
+      },
+      "env": {
+        "EXPO_USE_FLIPPER": "0",
+        "EXPO_PUBLIC_API_URL": "http://10.0.2.2:3001"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "withoutCredentials": true
+      },
+      "env": {
+        "EXPO_USE_FLIPPER": "0",
+        "EXPO_PUBLIC_API_URL": "https://your-vercel-deployment-url.vercel.app"
+      },
+      "cache": {
+        "key": "eas-build-preview-cache"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://your-vercel-deployment-url.vercel.app"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+} 

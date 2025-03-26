@@ -1,42 +1,33 @@
 # Fitness App
 
-A React Native application for tracking fitness workouts with MySQL database integration.
+A React Native mobile application for tracking fitness workouts, built with Expo and a MySQL backend.
 
 ## Features
 
 - User Authentication (Login & Registration)
 - Workout Tracking with CRUD operations
-- Connect to local MySQL database
+- Timer functionality for workouts
+- Sound alerts for workout completion
+- Configurable server connection for real devices
 
 ## Setup Instructions
 
 ### Prerequisites
 
 - Node.js and npm
-- MySQL server running locally
-- Expo CLI
+- MySQL server
+- Expo CLI and EAS CLI
+- Expo account (for EAS builds)
 
 ### Database Setup
 
-1. Create a MySQL database by importing the database schema:
+1. Create a MySQL database using the included schema:
 
 ```bash
 mysql -u root -p < database.sql
 ```
 
-Alternatively, you can run the SQL commands in the `database.sql` file manually in your MySQL client.
-
-### Backend Setup
-
-1. Install dependencies:
-
-```bash
-npm install
-```
-
-2. Configure environment variables:
-
-Create a `.env` file in the root of the project with the following variables:
+2. Configure your MySQL connection in the `.env` file:
 
 ```
 # MySQL Connection
@@ -47,44 +38,90 @@ DB_NAME=fitness_app
 DB_PORT=3306
 
 # Server Configuration
-PORT=3000
+PORT=3001
 ```
 
-Replace `your_mysql_username` and `your_mysql_password` with your MySQL credentials.
+### Backend Setup
 
-3. Start the backend server:
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start the backend server:
 
 ```bash
 npm run server
 ```
 
-### Frontend Setup
+The server will display available connection URLs including your local network IP.
 
-1. Update the API URL in `src/services/api.js` if you're not running on localhost or using a different port:
+### Running the App in Development
 
-```javascript
-// If running on physical device, use your computer's local IP instead of localhost
-const API_URL = "http://localhost:3000/api";
-```
-
-2. Start the Expo development server:
+1. Start the Expo development server:
 
 ```bash
 npm start
 ```
 
-3. Use Expo Go app on your mobile device or run in an emulator/simulator.
+2. Use the Expo Go app on your mobile device or run in an emulator.
 
-## Project Structure
+3. Configure the server connection in the app's Settings screen with your computer's local IP address (e.g., http://192.168.1.100:3001).
 
-- `server.js` - Express server for MySQL backend
-- `database.sql` - SQL schema for database setup
-- `src/screens` - React Native screens
-- `src/context` - React Context for state management
-- `src/services` - API service for backend communication
-- `.env` - Environment variables for database connection
+## Building for Android
+
+### Development Build
+
+```bash
+npm run build:dev
+```
+
+### Preview Build (APK)
+
+1. Update the `eas.json` file with your server IP:
+
+```json
+"env": {
+  "EXPO_PUBLIC_API_URL": "http://YOUR_LOCAL_IP:3001"
+}
+```
+
+2. Run the build command:
+
+```bash
+npm run build:preview
+```
+
+### Production Build
+
+```bash
+npm run build:production
+```
+
+## Troubleshooting
+
+### Connection Issues on Real Devices
+
+- Ensure your phone and computer are on the same WiFi network
+- Check that your computer's firewall allows connections to the server port
+- Verify the IP address is correct in the app settings
+- For Android emulators, use `10.0.2.2` instead of `localhost`
+
+### ViewManagerResolver Errors
+
+If you encounter a ViewManagerResolver error similar to the one in the reference image:
+
+1. Ensure you have the latest versions of navigation packages:
+
+```bash
+npx expo install react-native-screens react-native-safe-area-context react-native-gesture-handler
+```
+
+2. Make sure App.js properly initializes screens with `enableScreens()`
+
+3. Wrap your app with `GestureHandlerRootView`
 
 ## License
 
 MIT
-# Fitness_app
