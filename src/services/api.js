@@ -39,18 +39,31 @@ const MOCK_DATA = {
 // Check for EAS build environment variables
 const EAS_API_URL = process.env.EXPO_PUBLIC_API_URL;
 
+// Function to ensure URL has the correct format
+const formatApiUrl = (baseUrl, endpoint) => {
+  // If URL already includes /api, don't add it again
+  if (baseUrl.endsWith('/api')) {
+    return `${baseUrl}/${endpoint}`;
+  } else if (baseUrl.endsWith('/')) {
+    return `${baseUrl}api/${endpoint}`;
+  } else {
+    return `${baseUrl}/api/${endpoint}`;
+  }
+};
+
 // Function to get the API URL - improved for real device support
 const getApiUrl = async () => {
   try {
     // First check if user has manually set a URL in settings
     const savedUrl = await AsyncStorage.getItem('API_URL');
     if (savedUrl) {
-      return `${savedUrl}/api`;
+      // For saved URLs, we store the base URL without /api
+      return savedUrl;
     }
     
     // Next check if we have an EAS environment variable
     if (EAS_API_URL) {
-      return `${EAS_API_URL}/api`;
+      return EAS_API_URL;
     }
     
     // Fall back to default
@@ -64,8 +77,9 @@ const getApiUrl = async () => {
 // Function to test connection to server
 export const testConnection = async (baseUrl) => {
   try {
+    console.log('Testing connection to:', baseUrl);
     // Add timeout to prevent long hanging connections
-    const response = await axios.get(`${baseUrl}`, { 
+    const response = await axios.get(baseUrl, { 
       timeout: 5000,
       headers: { 'Cache-Control': 'no-cache' } 
     });
@@ -85,15 +99,18 @@ const withMockFallback = async (apiCall, mockResponse) => {
     return await apiCall();
   } catch (error) {
     console.warn('API error, using mock data:', error.message);
-    return mockResponse;
+    return mockResponse();
   }
 };
 
 // Auth API calls
 export const login = async (email, password) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.post(`${apiUrl}/login`, { email, password });
+    const baseUrl = await getApiUrl();
+    const loginUrl = formatApiUrl(baseUrl, 'login');
+    console.log('Login URL:', loginUrl);
+    
+    const response = await axios.post(loginUrl, { email, password });
     return response.data;
   };
 
@@ -110,8 +127,10 @@ export const login = async (email, password) => {
 
 export const register = async (email, password, confirmPassword) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.post(`${apiUrl}/register`, { 
+    const baseUrl = await getApiUrl();
+    const registerUrl = formatApiUrl(baseUrl, 'register');
+    
+    const response = await axios.post(registerUrl, { 
       email, 
       password, 
       confirmPassword 
@@ -140,8 +159,10 @@ export const register = async (email, password, confirmPassword) => {
 // Workout API calls
 export const getWorkouts = async (userId) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.get(`${apiUrl}/workouts/${userId}`);
+    const baseUrl = await getApiUrl();
+    const workoutsUrl = formatApiUrl(baseUrl, `workouts/${userId}`);
+    
+    const response = await axios.get(workoutsUrl);
     return response.data;
   };
 
@@ -154,8 +175,10 @@ export const getWorkouts = async (userId) => {
 
 export const addWorkout = async (workoutData) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.post(`${apiUrl}/workouts`, workoutData);
+    const baseUrl = await getApiUrl();
+    const workoutsUrl = formatApiUrl(baseUrl, 'workouts');
+    
+    const response = await axios.post(workoutsUrl, workoutData);
     return response.data;
   };
 
@@ -175,8 +198,10 @@ export const addWorkout = async (workoutData) => {
 
 export const updateWorkout = async (workoutId, workoutData) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.put(`${apiUrl}/workouts/${workoutId}`, workoutData);
+    const baseUrl = await getApiUrl();
+    const workoutUrl = formatApiUrl(baseUrl, `workouts/${workoutId}`);
+    
+    const response = await axios.put(workoutUrl, workoutData);
     return response.data;
   };
 
@@ -193,8 +218,10 @@ export const updateWorkout = async (workoutId, workoutData) => {
 
 export const deleteWorkout = async (workoutId) => {
   const apiCall = async () => {
-    const apiUrl = await getApiUrl();
-    const response = await axios.delete(`${apiUrl}/workouts/${workoutId}`);
+    const baseUrl = await getApiUrl();
+    const workoutUrl = formatApiUrl(baseUrl, `workouts/${workoutId}`);
+    
+    const response = await axios.delete(workoutUrl);
     return response.data;
   };
 
@@ -212,9 +239,9 @@ export const deleteWorkout = async (workoutId) => {
 
 // Add a new function to help with real device debugging
 export const getCurrentApiUrl = async () => {
-  const url = await getApiUrl();
+  const baseUrl = await getApiUrl();
   return { 
-    url,
+    url: baseUrl,
     defaultUrl: DEFAULT_API_URL,
     easUrl: EAS_API_URL || 'Not set',
     mockDataEnabled: true

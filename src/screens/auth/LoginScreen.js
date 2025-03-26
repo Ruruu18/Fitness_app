@@ -19,8 +19,8 @@ import { AuthContext } from '../../context/AuthContext';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('test@example.com');
+  const [password, setPassword] = useState('password123');
   
  
   const { login, error, loading } = useContext(AuthContext);

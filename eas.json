@@ -28,7 +28,7 @@
       },
       "env": {
         "EXPO_USE_FLIPPER": "0",
-        "EXPO_PUBLIC_API_URL": "https://your-vercel-deployment-url.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://fitness-app-beta-nine.vercel.app"
       },
       "cache": {
         "key": "eas-build-preview-cache"
@@ -39,7 +39,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://your-vercel-deployment-url.vercel.app"
+        "EXPO_PUBLIC_API_URL": "https://fitness-app-beta-nine.vercel.app"
       }
     }
   },
